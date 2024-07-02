@@ -128,6 +128,10 @@ func Hello(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
+func index(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Hello, World!"))
+}
 
 func main() {
 
@@ -135,8 +139,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
-	
+
+	http.HandleFunc("/", index)
 	http.HandleFunc("/api/hello", hello)
+	
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
