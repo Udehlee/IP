@@ -135,9 +135,14 @@ func StartServer() {
 	if err != nil {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
-	http.HandleFunc("/api/hello", hello)
-	fmt.Println("Server is running on port 8080...")
-	http.ListenAndServe(":8080", nil)
+	
+	http.HandleFunc("GET /api/hello", hello)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	fmt.Println("Server is running on port", port)
+	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 
 func main() {
