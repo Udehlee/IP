@@ -97,7 +97,7 @@ func Temp(city string) (string, error) {
 	return fmt.Sprintf("%.2f°C", weatherData.Main.Temp), nil
 }
 
-func hello(w http.ResponseWriter, r *http.Request) {
+func Hello(w http.ResponseWriter, r *http.Request) {
 
 	visitorName := r.URL.Query().Get("visitor_name")
 
@@ -129,7 +129,7 @@ func hello(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func StartServer() {
+func main() {
 
 	err := godotenv.Load()
 	if err != nil {
@@ -145,7 +145,5 @@ func StartServer() {
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 
-func main() {
-    StartServer()
-}
+
 
