@@ -136,7 +136,7 @@ func main() {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
 	
-	http.HandleFunc("GET /api/hello", hello)
+	http.HandleFunc("/api/hello", hello)
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
