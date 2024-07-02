@@ -129,7 +129,7 @@ func hello(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func main() {
+func StartServer() {
 
 	err := godotenv.Load()
 	if err != nil {
@@ -139,3 +139,8 @@ func main() {
 	fmt.Println("Server is running on port 8080...")
 	http.ListenAndServe(":8080", nil)
 }
+
+func main() {
+    StartServer()
+}
+
