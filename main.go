@@ -25,7 +25,7 @@ func IPAddr(r *http.Request) (string, error) {
 	xForwarded := r.Header.Get("X-Forwarded-For")
 	if xForwarded != "" {
 		ips := strings.Split(xForwarded, ",")
-		return strings.TrimSpace(ips[0]), fmt.Errorf("error getting first IP Addr")
+		return strings.TrimSpace(ips[0]), nil // Return the first IP without error
 	}
 
 	ip, _, err := net.SplitHostPort(r.RemoteAddr)
