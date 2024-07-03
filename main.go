@@ -135,7 +135,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/", index)
-	http.HandleFunc("/api/hello", hello)
+	http.HandleFunc("GET /api/hello", hello)
 
 	port := os.Getenv("PORT")
 	if port == "" {
