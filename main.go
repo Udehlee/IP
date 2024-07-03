@@ -15,11 +15,9 @@ type Response struct {
 	Greeting string `json:"greeting"`
 }
 
-// IPAddr fetch the IPAddress of the requester
+// IPAddr fetches the IPAddress of the requester
 func IPAddr() (string, error) {
-
 	ipifyURL := "https://api.ipify.org?format=json"
-
 	resp, err := http.Get(ipifyURL)
 	if err != nil {
 		return "", fmt.Errorf("unable to fetch IP address: %w", err)
@@ -44,9 +42,7 @@ func IPAddr() (string, error) {
 
 // Location gets the current city
 func Location(ip string) (string, error) {
-
 	apiKey := os.Getenv("IPGEOLOCATION_API_KEY")
-
 	url := fmt.Sprintf("https://api.ipgeolocation.io/ipgeo?apiKey=%s&ip=%s", apiKey, ip)
 
 	resp, err := http.Get(url)
@@ -71,8 +67,8 @@ func Location(ip string) (string, error) {
 	return city, nil
 }
 
+// Temp gets the temperature of a city
 func Temp(city string) (string, error) {
-
 	apiKey := os.Getenv("OPENWEATHERMAP_API_KEY")
 	url := fmt.Sprintf("http://api.openweathermap.org/data/2.5/weather?q=%s&appid=%s&units=metric", city, apiKey)
 
@@ -95,7 +91,12 @@ func Temp(city string) (string, error) {
 	return fmt.Sprintf("%.2f°C", weatherData.Main.Temp), nil
 }
 
+// Handler for /api/hello endpoint
 func hello(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 
 	visitorName := r.URL.Query().Get("visitor_name")
 
@@ -127,15 +128,20 @@ func hello(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// Handler for / endpoint
 func index(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Hello, World!"))
 }
 
 func main() {
-
 	http.HandleFunc("/", index)
-	http.HandleFunc("GET /api/hello", hello)
+	http.HandleFunc("/api/hello", hello)
 
 	port := os.Getenv("PORT")
 	if port == "" {
