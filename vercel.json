@@ -8,6 +8,6 @@
   ],
   "routes": [
     { "src": "/api/hello",
-      "dest": "/api/hello" }
+      "dest": "/api/main" }
   ]
 }
