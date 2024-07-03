@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
+	"strings"
 )
 
 type Response struct {
@@ -15,132 +17,101 @@ type Response struct {
 	Greeting string `json:"greeting"`
 }
 
-// IPAddr fetches the IPAddress of the requester
+type WeatherData map[string]interface{}
+
+// IPAddr gets the ip address of the client
 func IPAddr(r *http.Request) (string, error) {
-	ipifyURL := "https://api.ipify.org?format=json"
-	resp, err := http.Get(ipifyURL)
+	xForwarded := r.Header.Get("x-forwarded-for")
+	if xForwarded != "" {
+		ips := strings.Split(xForwarded, ",")
+		return strings.TrimSpace(ips[0]), fmt.Errorf("error getting first IP Addr")
+	}
+
+	ip, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		return "", fmt.Errorf("unable to fetch IP address: %w", err)
-	}
-	defer resp.Body.Close()
-
-	ipData, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("unable to read IP data: %w", err)
+		return "", fmt.Errorf("error getting IP Addr: %v", err)
 	}
 
-	ip := struct {
-		IP string `json:"ip"`
-	}{}
-
-	if err := json.Unmarshal(ipData, &ip); err != nil {
-		return "", fmt.Errorf("failed to unmarshal IP data: %w", err)
-	}
-
-	return ip.IP, nil
+	return ip, nil
 }
 
-// Location gets the current city
-func Location(ip string) (string, error) {
-	apiKey := os.Getenv("IPGEOLOCATION_API_KEY")
-	url := fmt.Sprintf("https://api.ipgeolocation.io/ipgeo?apiKey=%s&ip=%s", apiKey, ip)
+// WeatherInfo gets weather information based on the IP address
+func WeatherInfo(location string) (WeatherData, error) {
 
-	resp, err := http.Get(url)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	var result map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return "", err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("failed to get location: %s", resp.Status)
-	}
-
-	city, ok := result["city"].(string)
-	if !ok {
-		return "", fmt.Errorf("failed to get city")
-	}
-
-	return city, nil
-}
-
-// Temp gets the temperature of a city
-func Temp(city string) (string, error) {
 	apiKey := os.Getenv("OPENWEATHERMAP_API_KEY")
-	url := fmt.Sprintf("http://api.openweathermap.org/data/2.5/weather?q=%s&appid=%s&units=metric", city, apiKey)
+
+	url := fmt.Sprintf("http://api.weatherapi.com/v1/current.json?key=%s&q=%s", apiKey, location)
+
+	var weatherData WeatherData
 
 	resp, err := http.Get(url)
 	if err != nil {
-		return "", err
+		return weatherData, fmt.Errorf("unable to fetch weather details: %v", err)
 	}
 	defer resp.Body.Close()
 
-	weatherData := struct {
-		Main struct {
-			Temp float64 `json:"temp"`
-		} `json:"main"`
-	}{}
-
-	if err := json.NewDecoder(resp.Body).Decode(&weatherData); err != nil {
-		return "", err
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return weatherData, fmt.Errorf("unable to read response body: %v", err)
 	}
 
-	return fmt.Sprintf("%.2f°C", weatherData.Main.Temp), nil
+	if err := json.Unmarshal(body, &weatherData); err != nil {
+		return nil, fmt.Errorf("unable to unmarshal JSON: %v\nResponse body: %s", err, body)
+	}
+
+	return weatherData, nil
 }
 
-// Handler for /api/hello endpoint
 func hello(w http.ResponseWriter, r *http.Request) {
-	visitorName := r.URL.Query().Get("visitor_name")
 
-	clientIP, err := IPAddr(r)
+	visitor := r.URL.Query().Get("visitor_name")
+
+	visitor = strings.TrimSpace(visitor)
+	if visitor == "" {
+		visitor = "Guest"
+	}
+
+	IP, err := IPAddr(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Fatal(err)
+	}
+
+	weatherData, err := WeatherInfo(IP)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Unable to fetch weather and location information: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	location, err := Location(clientIP)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	locationName := weatherData["location"].(map[string]interface{})["name"].(string)
+	tempCelsius := weatherData["current"].(map[string]interface{})["temp_c"].(float64)
 
-	temp, err := Temp(location)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
+	greeting := fmt.Sprintf("Hello, %s! The temperature is %.1f degrees Celsius in %s", visitor, tempCelsius, locationName)
 	response := Response{
-		ClientIP: clientIP,
-		Location: location,
-		Greeting: fmt.Sprintf("Hello, %s! The temperature is %s in %s", visitorName, temp, location),
+		ClientIP: IP,
+		Location: locationName,
+		Greeting: greeting,
 	}
 
-	 // Encode response struct as JSON and send it
-    if err := json.NewEncoder(w).Encode(response); err != nil {
-        http.Error(w, fmt.Sprintf("Error encoding response: %v", err), http.StatusInternalServerError)
-        return
-    }
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
-// Handler for / endpoint
 func index(w http.ResponseWriter, r *http.Request) {
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Hello, World!"))
+	w.Write([]byte("Hello!"))
 }
 
 func main() {
-	http.HandleFunc("/", index)
-	http.HandleFunc("GET /api/hello", hello)
+
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", index)
+	mux.HandleFunc("/api/hello", hello)
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
-	fmt.Println("Server is running on port", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+
+	http.ListenAndServe(":"+port, nil)
+
 }
