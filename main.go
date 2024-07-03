@@ -107,11 +107,8 @@ func main() {
 	mux.HandleFunc("/", index)
 	mux.HandleFunc("/api/hello", hello)
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
 
-	http.ListenAndServe(":"+port, mux)
+
+	http.ListenAndServe(":8080", mux)
 
 }
