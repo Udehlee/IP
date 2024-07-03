@@ -7,8 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-
-	"github.com/joho/godotenv"
 )
 
 type Response struct {
@@ -135,11 +133,6 @@ func index(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
-	}
 
 	http.HandleFunc("/", index)
 	http.HandleFunc("GET /api/hello", hello)
