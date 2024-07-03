@@ -119,8 +119,11 @@ func hello(w http.ResponseWriter, r *http.Request) {
 		Greeting: fmt.Sprintf("Hello, %s! The temperature is %s in %s", visitorName, temp, location),
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	 // Encode response struct as JSON and send it
+    if err := json.NewEncoder(w).Encode(response); err != nil {
+        http.Error(w, fmt.Sprintf("Error encoding response: %v", err), http.StatusInternalServerError)
+        return
+    }
 }
 
 // Handler for / endpoint
