@@ -16,7 +16,7 @@ type Response struct {
 }
 
 // IPAddr fetches the IPAddress of the requester
-func IPAddr() (string, error) {
+func IPAddr(r *http.Request) (string, error) {
 	ipifyURL := "https://api.ipify.org?format=json"
 	resp, err := http.Get(ipifyURL)
 	if err != nil {
@@ -93,14 +93,9 @@ func Temp(city string) (string, error) {
 
 // Handler for /api/hello endpoint
 func hello(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	visitorName := r.URL.Query().Get("visitor_name")
 
-	clientIP, err := IPAddr()
+	clientIP, err := IPAddr(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -130,10 +125,6 @@ func hello(w http.ResponseWriter, r *http.Request) {
 
 // Handler for / endpoint
 func index(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Hello, World!"))
