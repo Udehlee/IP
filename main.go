@@ -21,7 +21,8 @@ type WeatherData map[string]interface{}
 
 // IPAddr gets the ip address of the client
 func IPAddr(r *http.Request) (string, error) {
-	xForwarded := r.Header.Get("x-forwarded-for")
+	
+	xForwarded := r.Header.Get("X-Forwarded-For")
 	if xForwarded != "" {
 		ips := strings.Split(xForwarded, ",")
 		return strings.TrimSpace(ips[0]), fmt.Errorf("error getting first IP Addr")
@@ -39,9 +40,7 @@ func IPAddr(r *http.Request) (string, error) {
 func WeatherInfo(location string) (WeatherData, error) {
 
 	apiKey := os.Getenv("OPENWEATHERMAP_API_KEY")
-
 	url := fmt.Sprintf("http://api.weatherapi.com/v1/current.json?key=%s&q=%s", apiKey, location)
-
 	var weatherData WeatherData
 
 	resp, err := http.Get(url)
@@ -102,13 +101,16 @@ func index(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/", index)
-	mux.HandleFunc("/api/hello", hello)
-
+	
+	http.HandleFunc("/", index)
+	http.HandleFunc("/api/hello", hello)
 
 
-	http.ListenAndServe(":8080", mux)
+port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	http.ListenAndServe(":"+port, nil)
 
 }
