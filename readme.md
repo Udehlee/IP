@@ -22,7 +22,6 @@ GET /api/hello?visitor_name=Mark
 ## Response
 
 ```json
->>>>>>> origin/main
 {
     "client_ip": "127.0.0.1",
     "location": "New York",
