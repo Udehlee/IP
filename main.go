@@ -121,6 +121,6 @@ func main() {
 		port = "8080"
 	}
 
-	http.ListenAndServe(":"+port, nil)
+	http.ListenAndServe(":"+port, mux)
 
 }
