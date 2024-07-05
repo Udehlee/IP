@@ -21,7 +21,6 @@ GET /api/hello?visitor_name=Mark
 ```
 ## Response
 
-
 ```json
 >>>>>>> origin/main
 {
@@ -59,5 +58,3 @@ go run main.go
 http:localhost:8080
 
 ```
-
->>>>>>> origin/main
