@@ -19,7 +19,15 @@ type Response struct {
 	Greeting string `json:"greeting"`
 }
 
-type WeatherData map[string]interface{}
+type WeatherData struct {
+	Location struct {
+		Name string `json:"name"`
+	} `json:"location"`
+
+	Current struct {
+		Tempc float64 `json:"temp_c"`
+	} `json:"current"`
+}
 
 // IPAddr gets the ip address of the client
 func IPAddr(r *http.Request) (string, error) {
@@ -60,7 +68,7 @@ func WeatherInfo(location string) (WeatherData, error) {
 	}
 
 	if err := json.Unmarshal(body, &weatherData); err != nil {
-		return nil, fmt.Errorf("unable to unmarshal JSON: %v\nResponse body: %s", err, body)
+		return weatherData, fmt.Errorf("unable to unmarshal JSON: %v\nResponse body: %s", err, body)
 	}
 
 	return weatherData, nil
@@ -86,8 +94,8 @@ func hello(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	locationName := weatherData["location"].(map[string]interface{})["name"].(string)  // current location
-	tempCelsius := weatherData["current"].(map[string]interface{})["temp_c"].(float64) // current temperature
+	locationName := weatherData.Location.Name
+	tempCelsius := weatherData.Current.Tempc
 
 	greeting := fmt.Sprintf("Hello, %s! The temperature is %.1f degrees Celsius in %s", visitor, tempCelsius, locationName)
 	response := Response{
